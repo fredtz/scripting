@@ -1,0 +1,38 @@
+Connect-VIServer -Server VCENTER -User Administrator -Password P@$$W0RD!
+# Total number of hosts
+$TotalVMHosts = Get-VMHost
+$TotalVMHostsCount = $TotalVMHosts.count
+Write-Host "There are $TotalVMHostsCount Hosts in $DefaultVIServer"
+
+# Total number of guests
+$TotalVMs = Get-VM
+$TotalVMsCount = $TotalVMs.count
+Write-Host "There are $TotalVMsCount Virtual Machines in $DefaultVIServer"
+
+# Get VM counts 
+$VMs = Get-View -ViewType VirtualMachine 
+Write-Host "Powered on : " (@($VMs | Where { $_.Runtime.PowerState -eq "poweredOn" }).Count) 
+Write-Host "Powered off: " (@($VMs | Where { $_.Runtime.PowerState -eq "poweredOff" }).Count)
+
+# Get storage use 
+ $datastores = Get-Datastore |  Where-Object {$_.name -notlike "*local*"}
+   $sum = $datastores | Measure-Object capacitymb -sum
+   $result = [math]::round(($sum.sum * 1MB / 1GB) / 1024,1)
+
+Write-Host 'Total SAN Storage' $result 'Terabytes'
+
+# Get cluster list
+$Clusters = Get-Cluster
+
+foreach ($Cluster in $Clusters){
+
+    $VMHosts = Get-Cluster $Cluster | Get-VMHost
+    $VMs = Get-Cluster $Cluster | Get-VM
+
+    $AverageVMsPerCluster = [math]::round(($VMs.count / $VMHosts.count), 1)
+    Write-Host "$Cluster has $AverageVMsPerCluster guests per VMware host"
+}
+
+
+
+
